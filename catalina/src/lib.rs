@@ -473,10 +473,10 @@ impl Renderer {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the Vune Shader, this is used for 
+    /// * `name` - The name of the Vune Shader, this is used for
     ///   searching it into the database without having to use the entire path.
     ///
-    /// * `content` - The shader's content. For opening files, you can use 
+    /// * `content` - The shader's content. For opening files, you can use
     ///   [`std::fs::read_to_string`] or [`include_str`].
     ///
     /// * `device` - The Renderer's device.
@@ -490,14 +490,11 @@ impl Renderer {
         device: &Device,
         layout: &[BindType],
     ) {
-        let shader = self.engine_mut().add_vune_shader(
-            device,
-            vune::VuneShader::new_main(content),
-            layout,
-        );
+        let shader =
+            self.engine_mut()
+                .add_vune_shader(device, vune::VuneShader::new_main(content), layout);
 
-        self.vune_shaders
-            .insert(name.to_string(), shader);
+        self.vune_shaders.insert(name.to_string(), shader);
     }
 
     /// Get the Vune Shader's [`ShaderId`] by searching its name.
@@ -522,12 +519,8 @@ impl Renderer {
         texture: &TextureView,
         params: &RenderParams,
     ) -> Result<()> {
-        let (recording, target) = render::render_full(
-            scene,
-            &mut self.resolver,
-            &self.shaders,
-            params,
-        );
+        let (recording, target) =
+            render::render_full(scene, &mut self.resolver, &self.shaders, params);
         let external_resources = [ExternalResource::Image(
             *target.as_image().unwrap(),
             texture,
@@ -749,13 +742,8 @@ impl Renderer {
         // Currently this is always enabled when the `debug_layers` setting is enabled as the bump
         // counts are used for debug visualiation.
         let robust = cfg!(feature = "debug_layers");
-        let recording = render.render_encoding_coarse(
-            scene,
-            &mut self.resolver,
-            &self.shaders,
-            params,
-            robust,
-        );
+        let recording =
+            render.render_encoding_coarse(scene, &mut self.resolver, &self.shaders, params, robust);
         let target = render.out_image();
         let bump_buf = render.bump_buf();
         #[cfg(feature = "debug_layers")]

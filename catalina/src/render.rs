@@ -177,8 +177,7 @@ pub(crate) fn render_encoding_full(
     params: &RenderParams,
 ) -> (Recording, ResourceProxy) {
     let mut render = Render::new();
-    let mut recording =
-        render.render_encoding_coarse(scene, resolver, shaders, params, false);
+    let mut recording = render.render_encoding_coarse(scene, resolver, shaders, params, false);
     let out_image = render.out_image();
     render.record_fine(shaders, &mut recording);
     (recording, out_image.into())
