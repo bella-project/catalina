@@ -9,9 +9,11 @@ For now, prefer updating the package-level readmes, e.g. vello/README.md.
 
 <div align="center">
 
-# Vello
+# Catalina
 
-**A GPU compute-centric 2D renderer**
+**A GPU compute-centric vector renderer.**
+
+A fork of Vello, focused on general-purpose applications.
 
 [![Linebender Zulip](https://img.shields.io/badge/Linebender-%23gpu-blue?logo=Zulip)](https://xi.zulipchat.com/#narrow/stream/197075-gpu)
 [![dependency status](https://deps.rs/repo/github/linebender/vello/status.svg)](https://deps.rs/repo/github/linebender/vello)

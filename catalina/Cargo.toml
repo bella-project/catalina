@@ -9,6 +9,9 @@ rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lints]
+workspace = true
+
 [package.metadata.docs.rs]
 all-features = true
 # There are no platform specific docs.
@@ -37,9 +40,6 @@ wgpu-profiler = ["dep:wgpu-profiler"]
 # This is only intended for development of Vello itself.
 # In practise, this won't compile outside of the Vello repository.
 hot_reload = ["catalina_shaders/compile"]
-
-[lints]
-workspace = true
 
 [dependencies]
 catalina_encoding = { workspace = true }

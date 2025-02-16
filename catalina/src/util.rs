@@ -13,14 +13,22 @@ use wgpu::{
 use crate::{Error, Result};
 
 /// Simple render context that maintains wgpu state for rendering the pipeline.
+/// TODO: Add better documentation.
 pub struct RenderContext {
+    /// The renderer context's instance.
     pub instance: Instance,
+    /// All of the available devices of that context.
     pub devices: Vec<DeviceHandle>,
 }
 
+/// A handler made to handle wgpu devices.
+/// TODO: Add better documentation.
 pub struct DeviceHandle {
+    /// The device's adapter.
     adapter: Adapter,
+    /// The device that is being currently handled.
     pub device: Device,
+    /// The device handler's queue.
     pub queue: Queue,
 }
 
@@ -29,6 +37,7 @@ impl RenderContext {
         clippy::new_without_default,
         reason = "Creating a wgpu Instance is something which should only be done rarely"
     )]
+    /// Creates a new [`RenderContext`] with a new wgpu Instance.
     pub fn new() -> Self {
         let backends = wgpu::Backends::from_env().unwrap_or_default();
         let flags = wgpu::InstanceFlags::from_build_config().with_env();
@@ -109,6 +118,7 @@ impl RenderContext {
         self.configure_surface(surface);
     }
 
+    /// Set the surface's present mode.
     pub fn set_present_mode(
         &self,
         surface: &mut RenderSurface<'_>,
@@ -183,9 +193,13 @@ impl DeviceHandle {
 /// Combination of surface and its configuration.
 #[derive(Debug)]
 pub struct RenderSurface<'s> {
+    /// The surface.
     pub surface: Surface<'s>,
+    /// The surface's configuration.
     pub config: SurfaceConfiguration,
+    /// The id/pointer to this render surface.
     pub dev_id: usize,
+    /// The format of the surface's texture.
     pub format: TextureFormat,
 }
 

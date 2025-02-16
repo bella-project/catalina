@@ -15,7 +15,11 @@ use crate::{
     Error, RendererOptions,
 };
 
-// Shaders for the full pipeline
+/// Shaders for the full pipeline
+#[allow(
+    missing_docs,
+    reason = "Too big to document, so it'll be dedicated to a separate PR in the future."
+)]
 pub struct FullShaders {
     pub pathtag_reduce: ShaderId,
     pub pathtag_reduce2: ShaderId,

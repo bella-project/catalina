@@ -29,13 +29,23 @@ struct UninitialisedShader {
 }
 
 #[derive(Default)]
+/// The wgpu backend engine.
+/// The one that takes care of Catalina's pipeline.
+///
+/// TODO: Add better documentation.
 pub struct WgpuEngine {
+    /// All of the compiled shaders.
     shaders: Vec<Shader>,
+    /// The resource pool.
     pool: ResourcePool,
+    /// The engine's bind map.
     bind_map: BindMap,
+    /// All downloaded buffers.
     downloads: HashMap<ResourceId, Buffer>,
     #[cfg(not(target_arch = "wasm32"))]
+    /// All of the uninitialized shaders.
     shaders_to_initialise: Option<Vec<UninitialisedShader>>,
+    /// The toggle that tells the engine if it uses the CPU backend or the GPU backend.
     pub(crate) use_cpu: bool,
     /// Overrides from a specific `Image::data`'s [`id`](peniko::Blob::id) to a wgpu `Texture`.
     ///
@@ -53,9 +63,13 @@ struct WgpuShader {
     bind_group_layout: BindGroupLayout,
 }
 
+/// An internal CPU Shader.
 pub enum CpuShaderType {
+    /// This tells the backend that a CPU Shader exists.
     Present(fn(u32, &[CpuBinding<'_>])),
+    /// The CPU Shader is missing or doesn't exist.
     Missing,
+    /// The CPU Shader gets completely skipped from the pipeline.
     Skipped,
 }
 
@@ -86,9 +100,13 @@ impl Shader {
     }
 }
 
+/// A handle for external resources.
+/// TODO: Add better documentation.
 pub enum ExternalResource<'a> {
     //#[expect(unused, reason = "No buffers are accepted as arguments currently")]
+    /// If the external resource is a buffer.
     Buffer(BufferProxy, &'a Buffer),
+    /// If the external resource is an image.
     Image(ImageProxy, &'a TextureView),
 }
 
@@ -140,6 +158,11 @@ enum TransientBuf<'a> {
 }
 
 impl WgpuEngine {
+    /// Creates a new [`WgpuEngine`].
+    ///
+    /// # Arguments
+    ///
+    /// * `use_cpu` - Tells the engine if it uses the CPU backend or the GPU backend.
     pub fn new(use_cpu: bool) -> Self {
         Self {
             use_cpu,
@@ -230,7 +253,7 @@ impl WgpuEngine {
         }
     }
 
-    // &[BindType::Uniform, BindType::BufReadOnly, BindType::BufReadOnly, BindType::Buffer, BindType::Buffer, BindType::Buffer]
+    /// Add a Vune Shader.
     pub fn add_vune_shader(
         &mut self,
         device: &Device,
@@ -315,6 +338,7 @@ impl WgpuEngine {
         })
     }
 
+    /// Add a shader for rendering purposes.
     pub fn add_render_shader(
         &mut self,
         device: &Device,
@@ -378,6 +402,7 @@ impl WgpuEngine {
         ShaderId(id)
     }
 
+    /// Executes/renders all of a [`Recording`]'s commands on the GPU/CPU.
     pub fn run_recording(
         &mut self,
         device: &Device,
@@ -753,10 +778,14 @@ impl WgpuEngine {
         Ok(())
     }
 
+    /// Get an already downloaded buffer proxy.
+    /// TODO: Add better documentation.
     pub fn get_download(&self, buf: BufferProxy) -> Option<&Buffer> {
         self.downloads.get(&buf.id)
     }
 
+    /// Free a buffer proxy's download.
+    /// TODO: Add better documentation.
     pub fn free_download(&mut self, buf: BufferProxy) {
         self.downloads.remove(&buf.id);
     }

@@ -47,6 +47,7 @@ pub struct Scene {
     encoding: Encoding,
     #[cfg(feature = "bump_estimate")]
     estimator: catalina_encoding::BumpEstimator,
+    /// The scene's Vune Flatten Shader.
     pub flatten_shader: WgpuVune,
 }
 static_assertions::assert_impl_all!(Scene: Send, Sync);

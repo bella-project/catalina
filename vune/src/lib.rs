@@ -16,6 +16,7 @@ pub struct CodeGen {
     pub ext_content: HashMap<String, String>,
     pub full_names: HashMap<String, String>,
     pub current_struct_name: String,
+    pub tabs: usize,
 }
 
 pub type RuneVec<T> = rune::alloc::Vec<T>;
@@ -42,6 +43,7 @@ impl CodeGen {
             ext_content,
             full_names: HashMap::new(),
             current_struct_name: String::new(),
+            tabs: 0,
         }
     }
 
@@ -72,8 +74,48 @@ impl CodeGen {
             ast::Expr::Call(c) => self.codegen_call(c),
             ast::Expr::Group(g) => self.codegen_group(g),
             ast::Expr::Unary(u) => self.codegen_unary(u),
+            ast::Expr::Object(o) => self.codegen_object(o),
             _ => {
                 dbg!(expr);
+                todo!()
+            }
+        }
+    }
+
+    pub fn codegen_object(&mut self, obj: ast::ExprObject) -> String {
+        let obj_ident = self.codegen_object_ident(obj.ident);
+        let assignments = self.codegen_object_assignments(obj.assignments);
+
+        obj_ident + " {\n" + &assignments + &self.get_tabs(self.tabs) + "}"
+    }
+
+    pub fn codegen_object_assignments(
+        &mut self,
+        obj_ass: ast::Braced<ast::FieldAssign, ast::Comma>,
+    ) -> String {
+        let mut result = String::new();
+
+        self.tabs += 1;
+
+        for (ty, _) in obj_ass {
+            result += &(self.get_tabs(self.tabs) + &self.codegen_field_assign(ty) + ",\n");
+        }
+
+        self.tabs -= 1;
+
+        result
+    }
+
+    pub fn codegen_field_assign(&mut self, assign: ast::FieldAssign) -> String {
+        self.codegen_object_key(assign.key) + ": " + &self.codegen_expr(assign.assign.unwrap().1)
+    }
+
+    pub fn codegen_object_ident(&mut self, obj_ident: ast::ObjectIdent) -> String {
+        match obj_ident {
+            ast::ObjectIdent::Named(p) => self.codegen_path(p),
+            ast::ObjectIdent::Anonymous(_) => "#".to_string(),
+            _ => {
+                dbg!(obj_ident);
                 todo!()
             }
         }
@@ -240,7 +282,7 @@ impl CodeGen {
             None => self.ident_to_str(function.name, true),
         };
 
-        let block = self.codegen_block(function.body, 1);
+        let block = self.codegen_block(function.body);
         let args = self.codegen_args(function.args);
 
         let arrow_with_type = if function.output.is_some() {
@@ -307,12 +349,16 @@ impl CodeGen {
         result
     }
 
-    pub fn codegen_block(&mut self, block: ast::Block, tabs: usize) -> String {
+    pub fn codegen_block(&mut self, block: ast::Block) -> String {
         let mut result = String::new();
 
+        self.tabs += 1;
+
         for stmt in block.statements {
-            result += &(self.get_tabs(tabs) + &self.codegen_stmt(stmt) + "\n");
+            result += &(self.get_tabs(self.tabs) + &self.codegen_stmt(stmt) + "\n");
         }
+
+        self.tabs -= 1;
 
         result
     }
@@ -464,14 +510,18 @@ impl CodeGen {
 
         match fields {
             ast::Fields::Named(b) => {
+                self.tabs += 1;
+
                 for i in b.braced {
-                    result += &(self.get_tabs(1) + &self.codegen_field(i.0));
+                    result += &(self.get_tabs(self.tabs) + &self.codegen_field(i.0));
 
                     match i.1 {
                         Some(_) => result += ",\n",
                         None => result += "\n",
                     }
                 }
+
+                self.tabs -= 1;
             }
             _ => {
                 dbg!(fields);

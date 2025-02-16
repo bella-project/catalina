@@ -13,7 +13,7 @@ use crate::{AaConfig, RenderParams};
 )]
 use crate::{Scene, ShaderId};
 
-use catalina_encoding::{make_mask_lut, make_mask_lut_16, Encoding, Resolver, WorkgroupSize};
+use catalina_encoding::{make_mask_lut, make_mask_lut_16, Resolver, WorkgroupSize};
 
 /// State for a render in progress.
 pub struct Render {
@@ -59,6 +59,7 @@ struct FineResources {
 /// processed for CPU-side validation. These buffers are documented as such.
 #[cfg(feature = "debug_layers")]
 pub struct CapturedBuffers {
+    /// The sizes of the Buffer.
     pub sizes: catalina_encoding::BufferSizes,
 
     /// Buffers that remain GPU-only
@@ -70,23 +71,30 @@ pub struct CapturedBuffers {
 
 #[cfg(feature = "debug_layers")]
 impl CapturedBuffers {
+    /// Release all of the paths and lines buffers from a [`Recording`].
     pub fn release_buffers(self, recording: &mut Recording) {
         recording.free_buffer(self.path_bboxes);
         recording.free_buffer(self.lines);
     }
 }
 
+/// The representation of a Vune Shader in the wgpu backend.
+/// TODO: Add better documentation here.
 #[derive(Clone, Default)]
 pub struct WgpuVune {
+    /// The Shader's id.
     pub id: Option<ShaderId>,
+    /// The Shader's custom data that'll be sent to the GPU.
     pub data: Vec<WgpuVuneData>,
 }
 
 impl WgpuVune {
+    /// Set a Vune Shader.
     pub fn set(&mut self, sh: ShaderId) {
         self.id = Some(sh);
     }
 
+    /// Send uniform data to the GPU.
     pub fn set_uniform<T: bytemuck::Pod>(&mut self, location_id: usize, data: T) {
         if location_id as isize > self.data.len() as isize - 1 {
             let current_size = self.data.len();
@@ -100,9 +108,12 @@ impl WgpuVune {
     }
 }
 
+/// Defined presets for Vune Shader bindings.
+/// TODO: Add better documentation here.
 pub mod wgpu_vune_bindings {
     use crate::BindType;
 
+    /// Bindings for the Flatten Shader.
     pub fn flatten(add_custom: Vec<BindType>) -> Vec<BindType> {
         let mut base: Vec<BindType> = Vec::new();
 
@@ -121,15 +132,20 @@ pub mod wgpu_vune_bindings {
     }
 }
 
+/// The data type for Vune Shader's custom values.
+/// TODO: Add better documentation here.
 #[derive(Clone, Default)]
 #[non_exhaustive]
 pub enum WgpuVuneData {
     #[default]
+    /// No data.
     Empty,
+    /// Uniform data.
     Uniform(Vec<u8>),
 }
 
 impl WgpuVuneData {
+    /// Send the custom Vune Data to the GPU.
     pub fn send_to_gpu(&self, recording: &mut Recording) -> ResourceProxy {
         match self {
             Self::Uniform(v) => {
@@ -141,14 +157,14 @@ impl WgpuVuneData {
 }
 
 #[cfg(feature = "wgpu")]
+/// Render an entire scene in the GPU.
 pub(crate) fn render_full(
     scene: &Scene,
     resolver: &mut Resolver,
     shaders: &FullShaders,
-    flatten: &WgpuVune,
     params: &RenderParams,
 ) -> (Recording, ResourceProxy) {
-    render_encoding_full(scene.encoding(), resolver, shaders, flatten, params)
+    render_encoding_full(scene, resolver, shaders, params)
 }
 
 #[cfg(feature = "wgpu")]
@@ -157,15 +173,13 @@ pub(crate) fn render_full(
 /// This function is not recommended when the scene can be complex, as it does not
 /// implement robust dynamic memory.
 pub(crate) fn render_encoding_full(
-    encoding: &Encoding,
+    scene: &Scene,
     resolver: &mut Resolver,
     shaders: &FullShaders,
-    flatten: &WgpuVune,
     params: &RenderParams,
 ) -> (Recording, ResourceProxy) {
     let mut render = Render::new();
-    let mut recording =
-        render.render_encoding_coarse(encoding, resolver, shaders, flatten, params, false);
+    let mut recording = render.render_encoding_coarse(scene, resolver, shaders, params, false);
     let out_image = render.out_image();
     render.record_fine(shaders, &mut recording);
     (recording, out_image.into())
@@ -178,6 +192,7 @@ impl Default for Render {
 }
 
 impl Render {
+    /// Creates a new [`Render`]
     pub fn new() -> Self {
         Self {
             fine_wg_count: None,
@@ -194,10 +209,9 @@ impl Render {
     /// of the atomic bump buffer, for robust dynamic memory.
     pub fn render_encoding_coarse(
         &mut self,
-        encoding: &Encoding,
+        scene: &Scene,
         resolver: &mut Resolver,
         shaders: &FullShaders,
-        flatten: &WgpuVune,
         params: &RenderParams,
         robust: bool,
     ) -> Recording {
@@ -205,7 +219,7 @@ impl Render {
         let mut recording = Recording::default();
         let mut packed = vec![];
 
-        let (layout, ramps, images) = resolver.resolve(encoding, &mut packed);
+        let (layout, ramps, images) = resolver.resolve(scene.encoding(), &mut packed);
         let gradient_image = if ramps.height == 0 {
             ResourceProxy::new_image(1, 1, ImageFormat::Rgba8)
         } else {
@@ -355,8 +369,8 @@ impl Render {
             lines_buf,
         ]);
 
-        if flatten.id.is_some() {
-            for i in &flatten.data {
+        if scene.flatten_shader.id.is_some() {
+            for i in &scene.flatten_shader.data {
                 if matches!(i, WgpuVuneData::Empty) {
                     continue;
                 }
@@ -366,7 +380,7 @@ impl Render {
         }
 
         recording.dispatch(
-            match flatten.id {
+            match scene.flatten_shader.id {
                 Some(f) => f,
                 None => shaders.flatten,
             },
@@ -686,6 +700,8 @@ impl Render {
         self.fine_resources.as_ref().unwrap().out_image
     }
 
+    /// Bump the buffer?
+    /// TODO: Find what this thing does.
     pub fn bump_buf(&self) -> BufferProxy {
         *self
             .fine_resources
@@ -697,6 +713,7 @@ impl Render {
     }
 
     #[cfg(feature = "debug_layers")]
+    /// Take all of the captured buffers, returns [`None`] if it can't take any.
     pub fn take_captured_buffers(&mut self) -> Option<CapturedBuffers> {
         self.captured_buffers.take()
     }
