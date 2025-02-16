@@ -59,6 +59,7 @@ struct FineResources {
 /// processed for CPU-side validation. These buffers are documented as such.
 #[cfg(feature = "debug_layers")]
 pub struct CapturedBuffers {
+    /// The sizes of the Buffer.
     pub sizes: catalina_encoding::BufferSizes,
 
     /// Buffers that remain GPU-only
@@ -70,6 +71,7 @@ pub struct CapturedBuffers {
 
 #[cfg(feature = "debug_layers")]
 impl CapturedBuffers {
+    /// Release all of the paths and lines buffers from a [`Recording`].
     pub fn release_buffers(self, recording: &mut Recording) {
         recording.free_buffer(self.path_bboxes);
         recording.free_buffer(self.lines);
@@ -711,6 +713,7 @@ impl Render {
     }
 
     #[cfg(feature = "debug_layers")]
+    /// Take all of the captured buffers, returns [`None`] if it can't take any.
     pub fn take_captured_buffers(&mut self) -> Option<CapturedBuffers> {
         self.captured_buffers.take()
     }
