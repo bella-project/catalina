@@ -89,7 +89,10 @@ impl CodeGen {
         obj_ident + " {\n" + &assignments + &self.get_tabs(self.tabs) + "}"
     }
 
-    pub fn codegen_object_assignments(&mut self, obj_ass: ast::Braced<ast::FieldAssign, ast::Comma>) -> String {
+    pub fn codegen_object_assignments(
+        &mut self,
+        obj_ass: ast::Braced<ast::FieldAssign, ast::Comma>,
+    ) -> String {
         let mut result = String::new();
 
         self.tabs += 1;
@@ -114,7 +117,7 @@ impl CodeGen {
             _ => {
                 dbg!(obj_ident);
                 todo!()
-            },
+            }
         }
     }
 
@@ -507,7 +510,6 @@ impl CodeGen {
 
         match fields {
             ast::Fields::Named(b) => {
-
                 self.tabs += 1;
 
                 for i in b.braced {
