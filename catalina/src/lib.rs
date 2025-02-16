@@ -501,7 +501,7 @@ impl Renderer {
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the Vune Shader previously set with [`add_vune_shader`].
+    /// * `name` - The name of the Vune Shader previously set with [`Self::add_vune_shader`].
     pub fn get_vune_shader(&mut self, name: &str) -> ShaderId {
         *self.vune_shaders.get(name).unwrap()
     }
