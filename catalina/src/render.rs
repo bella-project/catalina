@@ -13,7 +13,7 @@ use crate::{AaConfig, RenderParams};
 )]
 use crate::{Scene, ShaderId};
 
-use catalina_encoding::{make_mask_lut, make_mask_lut_16, Encoding, Resolver, WorkgroupSize};
+use catalina_encoding::{make_mask_lut, make_mask_lut_16, Resolver, WorkgroupSize};
 
 /// State for a render in progress.
 pub struct Render {
@@ -76,17 +76,23 @@ impl CapturedBuffers {
     }
 }
 
+/// The representation of a Vune Shader in the wgpu backend.
+/// TODO: Add better documentation here.
 #[derive(Clone, Default)]
 pub struct WgpuVune {
+    /// The Shader's id.
     pub id: Option<ShaderId>,
+    /// The Shader's custom data that'll be sent to the GPU.
     pub data: Vec<WgpuVuneData>,
 }
 
 impl WgpuVune {
+    /// Set a Vune Shader.
     pub fn set(&mut self, sh: ShaderId) {
         self.id = Some(sh);
     }
 
+    /// Send uniform data to the GPU.
     pub fn set_uniform<T: bytemuck::Pod>(&mut self, location_id: usize, data: T) {
         if location_id as isize > self.data.len() as isize - 1 {
             let current_size = self.data.len();
@@ -100,9 +106,12 @@ impl WgpuVune {
     }
 }
 
+/// Defined presets for Vune Shader bindings.
+/// TODO: Add better documentation here.
 pub mod wgpu_vune_bindings {
     use crate::BindType;
 
+    /// Bindings for the Flatten Shader.
     pub fn flatten(add_custom: Vec<BindType>) -> Vec<BindType> {
         let mut base: Vec<BindType> = Vec::new();
 
@@ -121,15 +130,20 @@ pub mod wgpu_vune_bindings {
     }
 }
 
+/// The data type for Vune Shader's custom values.
+/// TODO: Add better documentation here.
 #[derive(Clone, Default)]
 #[non_exhaustive]
 pub enum WgpuVuneData {
     #[default]
+    /// No data.
     Empty,
+    /// Uniform data.
     Uniform(Vec<u8>),
 }
 
 impl WgpuVuneData {
+    /// Send the custom Vune Data to the GPU.
     pub fn send_to_gpu(&self, recording: &mut Recording) -> ResourceProxy {
         match self {
             Self::Uniform(v) => {
@@ -141,6 +155,7 @@ impl WgpuVuneData {
 }
 
 #[cfg(feature = "wgpu")]
+/// Render an entire scene in the GPU.
 pub(crate) fn render_full(
     scene: &Scene,
     resolver: &mut Resolver,
@@ -176,6 +191,7 @@ impl Default for Render {
 }
 
 impl Render {
+    /// Creates a new [`Render`]
     pub fn new() -> Self {
         Self {
             fine_wg_count: None,
@@ -683,6 +699,8 @@ impl Render {
         self.fine_resources.as_ref().unwrap().out_image
     }
 
+    /// Bump the buffer?
+    /// TODO: Find what this thing does.
     pub fn bump_buf(&self) -> BufferProxy {
         *self
             .fine_resources

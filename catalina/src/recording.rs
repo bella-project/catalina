@@ -41,29 +41,43 @@ pub struct BufferProxy {
     pub name: &'static str,
 }
 
+/// An enum used to tell what format an image has.
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum ImageFormat {
+    /// 8-bit RGBA format.
     Rgba8,
+    /// 8-bit BGRA format.
     Bgra8,
 }
 
 /// Proxy used as a handle to an image.
 #[derive(Clone, Copy)]
 pub struct ImageProxy {
+    /// The width of the image.
     pub width: u32,
+    /// The height of the image.
     pub height: u32,
+    /// The image's format.
     pub format: ImageFormat,
+    /// The image's id.
     pub id: ResourceId,
 }
 
+/// Proxy used a handle to a resource.
 #[derive(Clone, Copy)]
 pub enum ResourceProxy {
+    /// If the resource is a buffer.
     Buffer(BufferProxy),
+    /// If the resource is a buffer slice.
     BufferRange {
+        /// The buffer.
         proxy: BufferProxy,
+        /// The beginning of the slice.
         offset: u64,
+        /// The end of the slice.
         size: u64,
     },
+    /// If the resource is an image.
     Image(ImageProxy),
 }
 
@@ -75,7 +89,9 @@ pub enum Command {
     UploadUniform(BufferProxy, Vec<u8>),
     /// Commands the data to be uploaded to the given image.
     UploadImage(ImageProxy, Vec<u8>),
+    /// Commands the data to be written to the given image.
     WriteImage(ImageProxy, [u32; 2], Image),
+    /// Commands the data to download the given buffer.
     Download(BufferProxy),
     /// Commands to clear the buffer from an offset on for a length of the given size.
     /// If the size is [None], it clears until the end.
@@ -87,8 +103,11 @@ pub enum Command {
     // Discussion question: third argument is vec of resources?
     // Maybe use tricks to make more ergonomic?
     // Alternative: provide bufs & images as separate sequences
+    /// Commands a compute shader to run.
     Dispatch(ShaderId, (u32, u32, u32), Vec<ResourceProxy>),
+    /// Commands a compute shader to run indirectly?
     DispatchIndirect(ShaderId, BufferProxy, u64, Vec<ResourceProxy>),
+    /// Commands a draw call to be sent.
     Draw(DrawParams),
 }
 
@@ -157,10 +176,12 @@ impl Recording {
         image_proxy
     }
 
+    /// Commands to write the given data to an already existing image.
     pub fn write_image(&mut self, proxy: ImageProxy, x: u32, y: u32, image: Image) {
         self.push(Command::WriteImage(proxy, [x, y], image));
     }
 
+    /// Commands to dispatch a compute shader.
     pub fn dispatch<R>(&mut self, shader: ShaderId, wg_size: (u32, u32, u32), resources: R)
     where
         R: IntoIterator,
@@ -237,6 +258,7 @@ impl Recording {
 }
 
 impl BufferProxy {
+    /// Create a new [`BufferProxy`].
     pub fn new(size: u64, name: &'static str) -> Self {
         let id = ResourceId::next();
         debug_assert!(size > 0);
@@ -246,6 +268,7 @@ impl BufferProxy {
 
 impl ImageFormat {
     #[cfg(feature = "wgpu")]
+    /// Convert a Catalina [`ImageFormat`] into a Wgpu [`wgpu::TextureFormat`].
     pub fn to_wgpu(self) -> wgpu::TextureFormat {
         match self {
             Self::Rgba8 => wgpu::TextureFormat::Rgba8Unorm,
@@ -254,6 +277,7 @@ impl ImageFormat {
     }
 
     #[cfg(feature = "wgpu")]
+    /// Convert a Wgpu [`wgpu::TextureFormat`] into a Catalina [`ImageFormat`].
     pub fn from_wgpu(format: wgpu::TextureFormat) -> Option<Self> {
         match format {
             wgpu::TextureFormat::Rgba8Unorm => Some(Self::Rgba8),
@@ -264,6 +288,7 @@ impl ImageFormat {
 }
 
 impl ImageProxy {
+    /// Create a new [`ImageProxy`]
     pub fn new(width: u32, height: u32, format: ImageFormat) -> Self {
         let id = ResourceId::next();
         Self {
@@ -276,14 +301,18 @@ impl ImageProxy {
 }
 
 impl ResourceProxy {
+    /// Create a new buffer.
     pub fn new_buf(size: u64, name: &'static str) -> Self {
         Self::Buffer(BufferProxy::new(size, name))
     }
 
+    /// Create a new image.
     pub fn new_image(width: u32, height: u32, format: ImageFormat) -> Self {
         Self::Image(ImageProxy::new(width, height, format))
     }
 
+    /// Get the current [`ResourceProxy`] as a [`BufferProxy`].
+    /// Returns [`None`] if the proxy can't be converted.
     pub fn as_buf(&self) -> Option<&BufferProxy> {
         match self {
             Self::Buffer(proxy) => Some(proxy),
@@ -291,6 +320,8 @@ impl ResourceProxy {
         }
     }
 
+    /// Get the current [`ResourceProxy`] as an [`ImageProxy`].
+    /// Returns [`None`] if the proxy can't be converted.
     pub fn as_image(&self) -> Option<&ImageProxy> {
         match self {
             Self::Image(proxy) => Some(proxy),

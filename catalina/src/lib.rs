@@ -745,7 +745,6 @@ impl Renderer {
         params: &RenderParams,
     ) -> Result<RenderResult> {
         let mut render = Render::new();
-        let encoding = scene.encoding();
         // TODO: turn this on; the download feature interacts with CPU dispatch.
         // Currently this is always enabled when the `debug_layers` setting is enabled as the bump
         // counts are used for debug visualiation.
